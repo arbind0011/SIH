@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tourist Safety App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+        }
+        .app-container {
+            max-width: 420px;
+            height: 800px;
+            margin: auto;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+        .sos-button {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            user-select: none;
+        }
+        .sos-button.active {
+            transform: scale(0.95);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3);
+        }
+        .notification-banner {
+            transform: translateY(-150%);
+            transition: transform 0.5s ease-in-out;
+        }
+        .notification-banner.show {
+            transform: translateY(0);
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.6);
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="bg-gray-200 flex items-center justify-center min-h-screen">
+
+    <div class="app-container bg-gray-50 flex flex-col">
+        <!-- Top Status Bar Simulation -->
+        <div class="bg-white px-4 pt-2 pb-1 flex justify-between items-center">
+            <span class="text-sm font-semibold">9:41</span>
+            <div class="flex items-center space-x-1">
+                <i class="fas fa-signal text-xs"></i>
+                <i class="fas fa-wifi text-xs"></i>
+                <i class="fas fa-battery-full text-sm"></i>
+            </div>
+        </div>
+
+        <div id="app-content" class="flex-grow overflow-y-auto relative">
+            
+            <!-- Notification Banner -->
+            <div id="notificationBanner" class="notification-banner absolute top-4 left-4 right-4 bg-yellow-500 text-white p-3 rounded-lg shadow-lg z-40 flex items-start">
+                <i class="fas fa-exclamation-triangle mr-3 mt-1"></i>
+                <div id="notificationText"></div>
+            </div>
+
+            <!-- Onboarding Screen -->
+            <div id="onboardingScreen" class="screen active p-6 text-center">
+                <h1 class="text-3xl font-bold text-gray-800 mt-8">Welcome to Safety Shield</h1>
+                <p class="text-gray-600 mt-2">Let's create your secure Digital Tourist ID.</p>
+                <div class="mt-10 text-left">
+                    <label class="font-semibold text-gray-700">Full Name</label>
+                    <input type="text" id="userName" class="w-full p-3 border border-gray-300 rounded-lg mt-1" value="Aditya Sharma" placeholder="Enter your name">
+                    
+                    <label class="font-semibold text-gray-700 mt-4 block">Trip End Date</label>
+                    <input type="date" id="tripEndDate" class="w-full p-3 border border-gray-300 rounded-lg mt-1" value="2025-09-10">
+                    
+                    <label class="font-semibold text-gray-700 mt-4 block">Emergency Contact</label>
+                    <input type="tel" class="w-full p-3 border border-gray-300 rounded-lg mt-1" value="+919876543210" placeholder="Phone number">
+                    
+                    <button id="scanIdBtn" class="w-full bg-gray-200 text-gray-800 font-bold py-3 rounded-lg mt-6 flex items-center justify-center">
+                        <i class="fas fa-id-card mr-2"></i> Scan Passport / Aadhaar
+                    </button>
+                    <p id="scanStatus" class="text-green-600 text-sm mt-2 text-center hidden"><i class="fas fa-check-circle"></i> ID Verified Successfully!</p>
+                </div>
+                <button id="generateIdBtn" class="w-full bg-blue-600 text-white font-bold py-4 rounded-lg mt-8 hover:bg-blue-700 disabled:bg-gray-400" disabled>Generate Secure ID</button>
+            </div>
+
+            <!-- Dashboard Screen -->
+            <div id="dashboardScreen" class="screen p-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-gray-500" data-lang-key="welcome">Welcome back,</p>
+                        <h2 id="dashboardUserName" class="text-2xl font-bold text-gray-800">Aditya</h2>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold text-gray-500" data-lang-key="safety_score">Safety Score</p>
+                        <div class="text-2xl font-bold text-green-600">95<span class="text-sm">/100</span></div>
+                    </div>
+                </div>
+
+                <div class="mt-6 bg-gray-200 rounded-2xl h-64 relative overflow-hidden">
+                    <!-- This would be a real map -->
+                    <img src="https://placehold.co/400x300/e2e8f0/6366f1?text=Map+View\n(Bhubaneswar)&font=inter" class="w-full h-full object-cover" alt="Map of Bhubaneswar with a marker for current location">
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                         <div class="w-4 h-4 bg-blue-500 rounded-full ring-8 ring-blue-500/30"></div>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-bold text-lg" data-lang-key="quick_actions">Quick Actions</h3>
+                    <div class="grid grid-cols-2 gap-4 mt-2">
+                        <div class="bg-white p-4 rounded-xl shadow-sm text-center">
+                            <i class="fas fa-route text-2xl text-blue-500"></i>
+                            <p class="mt-2 font-semibold" data-lang-key="my_itinerary">My Itinerary</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm text-center">
+                            <i class="fas fa-shield-alt text-2xl text-green-500"></i>
+                            <p class="mt-2 font-semibold" data-lang-key="safety_tips">Safety Tips</p>
+                        </div>
+                         <div class="bg-white p-4 rounded-xl shadow-sm text-center">
+                            <i class="fas fa-hospital text-2xl text-red-500"></i>
+                            <p class="mt-2 font-semibold" data-lang-key="local_help">Local Help</p>
+                        </div>
+                         <div class="bg-white p-4 rounded-xl shadow-sm text-center">
+                            <i class="fas fa-language text-2xl text-purple-500"></i>
+                            <p class="mt-2 font-semibold" data-lang-key="translate">Translate</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ID Screen -->
+            <div id="idScreen" class="screen p-6 flex flex-col items-center">
+                 <h2 class="text-2xl font-bold text-gray-800" data-lang-key="digital_id">Digital Tourist ID</h2>
+                 <div class="mt-8 bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-6 rounded-2xl shadow-lg w-full">
+                     <div class="flex justify-between items-start">
+                         <div>
+                            <p class="text-sm opacity-80">NAME</p>
+                            <p id="idCardName" class="font-bold text-xl">Aditya Sharma</p>
+                         </div>
+                         <i class="fas fa-check-circle text-2xl text-green-300"></i>
+                     </div>
+                     <div class="mt-4">
+                        <p class="text-sm opacity-80">NATIONALITY</p>
+                        <p class="font-semibold">Indian</p>
+                     </div>
+                     <div class="mt-4 flex justify-between">
+                        <div>
+                            <p class="text-sm opacity-80">VALID UNTIL</p>
+                            <p id="idCardExpiry" class="font-semibold">10 Sep 2025</p>
+                        </div>
+                         <div>
+                            <p class="text-sm opacity-80 text-right">ID</p>
+                            <p class="font-mono text-sm">IND-8A9B2C3D</p>
+                        </div>
+                     </div>
+                 </div>
+                 <div class="mt-8 p-4 bg-white rounded-lg">
+                    <img src="https://placehold.co/200x200/ffffff/000000?text=QR+Code" alt="QR Code for Digital ID">
+                 </div>
+                 <p class="mt-4 text-gray-600 text-sm text-center" data-lang-key="scan_qr">Show this QR code for verification at hotels and check-posts.</p>
+            </div>
+            
+            <!-- Settings Screen -->
+            <div id="settingsScreen" class="screen p-6">
+                 <h2 class="text-2xl font-bold text-gray-800" data-lang-key="settings">Settings</h2>
+                 <div class="mt-8 bg-white p-4 rounded-lg shadow-sm">
+                     <div class="flex justify-between items-center">
+                         <div>
+                            <p class="font-semibold" data-lang-key="real_time_tracking">Real-time Tracking</p>
+                            <p class="text-sm text-gray-500" data-lang-key="tracking_desc">Share location with family</p>
+                         </div>
+                         <label class="relative inline-flex items-center cursor-pointer">
+                           <input type="checkbox" value="" class="sr-only peer">
+                           <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                         </label>
+                     </div>
+                 </div>
+                 <div class="mt-4 bg-white p-4 rounded-lg shadow-sm">
+                     <label for="languageSelect" class="font-semibold" data-lang-key="language">Language</label>
+                     <p class="text-sm text-gray-500" data-lang-key="language_desc">Choose your preferred language</p>
+                     <select id="languageSelect" class="w-full p-2 mt-2 border border-gray-300 rounded-lg">
+                         <option value="en">English</option>
+                         <option value="hi">हिन्दी (Hindi)</option>
+                         <option value="or">ଓଡିଆ (Odia)</option>
+                         <option value="bn">বাংলা (Bengali)</option>
+                     </select>
+                 </div>
+                 <div class="mt-6 text-center">
+                    <button class="bg-blue-100 text-blue-700 font-semibold px-4 py-2 rounded-lg" id="simulateGeoFence">Simulate Geo-Fence Alert</button>
+                 </div>
+            </div>
+        </div>
+
+        <!-- SOS Button and Nav -->
+        <div class="relative">
+            <div class="absolute -top-16 left-1/2 -translate-x-1/2">
+                <button id="sosButton" class="sos-button w-20 h-20 bg-red-600 text-white rounded-full flex items-center justify-center text-3xl font-bold shadow-2xl border-4 border-gray-50">SOS</button>
+            </div>
+            <div class="bg-white flex justify-around items-center p-2 border-t border-gray-200">
+                <button class="nav-btn p-2 w-1/3 text-blue-600" data-target="dashboardScreen">
+                    <i class="fas fa-home text-2xl"></i>
+                    <span class="text-xs block" data-lang-key="dashboard">Dashboard</span>
+                </button>
+                <button class="nav-btn p-2 w-1/3 text-gray-500" data-target="idScreen">
+                    <i class="fas fa-id-card text-2xl"></i>
+                    <span class="text-xs block" data-lang-key="digital_id">Digital ID</span>
+                </button>
+                <button class="nav-btn p-2 w-1/3 text-gray-500" data-target="settingsScreen">
+                    <i class="fas fa-cog text-2xl"></i>
+                    <span class="text-xs block" data-lang-key="settings">Settings</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SOS Confirmation Modal -->
+    <div id="sosModal" class="modal-overlay">
+        <div class="bg-white rounded-2xl p-6 w-11/12 max-w-sm text-center">
+            <h2 class="text-2xl font-bold text-red-600">CONFIRM EMERGENCY</h2>
+            <p class="mt-2 text-gray-600">Your live location and ID will be sent to the nearest police unit and your emergency contacts.</p>
+            <button id="confirmSosBtn" class="w-full bg-red-600 text-white font-bold py-4 rounded-lg mt-6">SEND ALERT NOW</button>
+            <button id="cancelSosBtn" class="w-full text-gray-600 font-semibold py-2 rounded-lg mt-2">Cancel</button>
+        </div>
+    </div>
+    
+    <!-- Alert Sent Modal -->
+    <div id="alertSentModal" class="modal-overlay">
+        <div class="bg-white rounded-2xl p-6 w-11/12 max-w-sm text-center">
+            <i class="fas fa-check-circle text-6xl text-green-500"></i>
+            <h2 class="text-2xl font-bold text-gray-800 mt-4">Alert Sent!</h2>
+            <p class="mt-2 text-gray-600">Help is on the way. Stay in your current location if it is safe to do so.</p>
+            <button id="closeAlertModalBtn" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg mt-6">OK</button>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const screens = document.querySelectorAll('.screen');
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const onboardingScreen = document.getElementById('onboardingScreen');
+    const dashboardScreen = document.getElementById('dashboardScreen');
+    const scanIdBtn = document.getElementById('scanIdBtn');
+    const scanStatus = document.getElementById('scanStatus');
+    const generateIdBtn = document.getElementById('generateIdBtn');
+    const sosButton = document.getElementById('sosButton');
+    const sosModal = document.getElementById('sosModal');
+    const confirmSosBtn = document.getElementById('confirmSosBtn');
+    const cancelSosBtn = document.getElementById('cancelSosBtn');
+    const alertSentModal = document.getElementById('alertSentModal');
+    const closeAlertModalBtn = document.getElementById('closeAlertModalBtn');
+    const notificationBanner = document.getElementById('notificationBanner');
+    const notificationText = document.getElementById('notificationText');
+    const simulateGeoFenceBtn = document.getElementById('simulateGeoFence');
+    const languageSelect = document.getElementById('languageSelect');
+    
+    const translations = {
+        en: {
+            welcome: 'Welcome back,',
+            safety_score: 'Safety Score',
+            quick_actions: 'Quick Actions',
+            my_itinerary: 'My Itinerary',
+            safety_tips: 'Safety Tips',
+            local_help: 'Local Help',
+            translate: 'Translate',
+            digital_id: 'Digital ID',
+            scan_qr: 'Show this QR code for verification at hotels and check-posts.',
+            settings: 'Settings',
+            real_time_tracking: 'Real-time Tracking',
+            tracking_desc: 'Share location with family',
+            language: 'Language',
+            language_desc: 'Choose your preferred language',
+            dashboard: 'Dashboard'
+        },
+        hi: {
+            welcome: 'वापसी पर स्वागत है,',
+            safety_score: 'सुरक्षा स्कोर',
+            quick_actions: 'त्वरित कार्रवाई',
+            my_itinerary: 'मेरी यात्रा योजना',
+            safety_tips: 'सुरक्षा सुझाव',
+            local_help: 'स्थानीय मदद',
+            translate: 'अनुवाद',
+            digital_id: 'डिजिटल आईडी',
+            scan_qr: 'होटल और चेक-पोस्ट पर सत्यापन के लिए यह क्यूआर कोड दिखाएं।',
+            settings: 'सेटिंग्स',
+            real_time_tracking: 'रीयल-टाइम ट्रैकिंग',
+            tracking_desc: 'परिवार के साथ स्थान साझा करें',
+            language: 'भाषा',
+            language_desc: 'अपनी पसंदीदा भाषा चुनें',
+            dashboard: 'डैशबोर्ड'
+        },
+        or: {
+            welcome: 'ଫେରି ଆସିବାକୁ ସ୍ୱାଗତ,',
+            safety_score: 'ସୁରକ୍ଷା ସ୍କୋର',
+            quick_actions: 'ଶୀଘ୍ର କାର୍ଯ୍ୟ',
+            my_itinerary: 'ମୋର ଯାତ୍ରା',
+            safety_tips: 'ସୁରକ୍ଷା ପରାମର୍ଶ',
+            local_help: 'ସ୍ଥାନୀୟ ସାହାଯ୍ୟ',
+            translate: 'ଅନୁବାଦ',
+            digital_id: 'ଡିଜିଟାଲ୍ ଆଇଡି',
+            scan_qr: 'ହୋଟେଲ ଏବଂ ଚେକ୍-ପୋଷ୍ଟରେ ଯାଞ୍ଚ ପାଇଁ ଏହି QR କୋଡ୍ ଦେଖାନ୍ତୁ |',
+            settings: 'ସେଟିଂସ',
+            real_time_tracking: 'ରିଅଲ୍-ଟାଇମ୍ ଟ୍ରାକିଂ',
+            tracking_desc: 'ପରିବାର ସହିତ ଅବସ୍ଥାନ ସେୟାର କରନ୍ତୁ',
+            language: 'ଭାଷା',
+            language_desc: 'ଆପଣଙ୍କର ପସନ୍ଦର ଭାଷା ବାଛନ୍ତୁ',
+            dashboard: 'ଡ୍ୟାସବୋର୍ଡ'
+        },
+        bn: {
+            welcome: 'ফিরে আসার জন্য স্বাগতম,',
+            safety_score: 'নিরাপত্তা স্কোর',
+            quick_actions: 'দ্রুত পদক্ষেপ',
+            my_itinerary: 'আমার ভ্রমণপথ',
+            safety_tips: 'নিরাপত্তা টিপস',
+            local_help: 'স্থানীয় সাহায্য',
+            translate: 'অনুবাদ',
+            digital_id: 'ডিজিটাল আইডি',
+            scan_qr: 'হোটেল এবং চেক-পোস্টে যাচাইয়ের জন্য এই QR কোডটি দেখান।',
+            settings: 'সেটিংস',
+            real_time_tracking: 'রিয়েল-টাইম ট্র্যাকিং',
+            tracking_desc: 'পরিবারের সাথে অবস্থান শেয়ার করুন',
+            language: 'ভাষা',
+            language_desc: 'আপনার পছন্দের ভাষা নির্বাচন করুন',
+            dashboard: 'ড্যাশবোর্ড'
+        }
+    };
+
+    function switchScreen(targetId) {
+        screens.forEach(screen => {
+            screen.classList.toggle('active', screen.id === targetId);
+        });
+        navButtons.forEach(btn => {
+            btn.classList.toggle('text-blue-600', btn.dataset.target === targetId);
+            btn.classList.toggle('text-gray-500', btn.dataset.target !== targetId);
+        });
+    }
+
+    navButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            switchScreen(button.dataset.target);
+        });
+    });
+
+    // Onboarding Logic
+    scanIdBtn.addEventListener('click', () => {
+        scanIdBtn.classList.add('opacity-50');
+        setTimeout(() => {
+            scanStatus.classList.remove('hidden');
+            generateIdBtn.disabled = false;
+            generateIdBtn.classList.remove('disabled:bg-gray-400');
+        }, 1000);
+    });
+
+    generateIdBtn.addEventListener('click', () => {
+        const userName = document.getElementById('userName').value;
+        const tripEndDate = new Date(document.getElementById('tripEndDate').value);
+        const formattedDate = tripEndDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+        document.getElementById('dashboardUserName').textContent = userName.split(' ')[0];
+        document.getElementById('idCardName').textContent = userName;
+        document.getElementById('idCardExpiry').textContent = formattedDate;
+
+        switchScreen('dashboardScreen');
+    });
+
+    // SOS Button Logic
+    let sosPressTimer;
+    sosButton.addEventListener('mousedown', () => {
+        sosButton.classList.add('active');
+        sosPressTimer = setTimeout(() => {
+            sosModal.classList.add('show');
+        }, 2000); // 2 second hold
+    });
+
+    sosButton.addEventListener('mouseup', () => {
+        sosButton.classList.remove('active');
+        clearTimeout(sosPressTimer);
+    });
+    
+    sosButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        sosButton.classList.add('active');
+        sosPressTimer = setTimeout(() => {
+            sosModal.classList.add('show');
+        }, 2000); // 2 second hold
+    });
+    
+    sosButton.addEventListener('touchend', () => {
+        sosButton.classList.remove('active');
+        clearTimeout(sosPressTimer);
+    });
+
+    cancelSosBtn.addEventListener('click', () => {
+        sosModal.classList.remove('show');
+    });
+
+    confirmSosBtn.addEventListener('click', () => {
+        sosModal.classList.remove('show');
+        alertSentModal.classList.add('show');
+    });
+
+    closeAlertModalBtn.addEventListener('click', () => {
+        alertSentModal.classList.remove('show');
+    });
+
+    // Geo-Fence Simulation
+    function showNotification(message, type = 'warning') {
+        notificationText.innerHTML = `<strong>${type === 'warning' ? 'CAUTION:' : 'INFO:'}</strong> ${message}`;
+        notificationBanner.className = 'notification-banner absolute top-4 left-4 right-4 p-3 rounded-lg shadow-lg z-40 flex items-start';
+        if (type === 'warning') {
+            notificationBanner.classList.add('bg-yellow-500', 'text-white');
+        } else {
+             notificationBanner.classList.add('bg-blue-500', 'text-white');
+        }
+        
+        notificationBanner.classList.add('show');
+        setTimeout(() => {
+            notificationBanner.classList.remove('show');
+        }, 5000);
+    }
+
+    simulateGeoFenceBtn.addEventListener('click', () => {
+        showNotification("You are entering a high-risk zone. Please be aware of your surroundings.");
+    });
+    
+    // Language Switcher
+    languageSelect.addEventListener('change', (event) => {
+        const lang = event.target.value;
+        const langPack = translations[lang];
+        document.querySelectorAll('[data-lang-key]').forEach(el => {
+            const key = el.dataset.langKey;
+            if (langPack[key]) {
+                el.textContent = langPack[key];
+            }
+        });
+    });
+
+    // Initialize with default screen
+    switchScreen('onboardingScreen');
+});
+</script>
+</body>
+</html>
